@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WBT Token Minting</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.1/dist/web3.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+        crossorigin="anonymous"></script>
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 text-center mt-5">
+                <h1 class="logo-title">Waldo's Bubble Tea Shop</h1>
+            </div>
+            <div class="col-md-6 mt-4">
+                <div class="mb-3">
+                    <label for="PBPhoneInput" class="form-label fw-bold">Phone Book:</label>
+                    <input type="text" class="form-control" id="PBPhoneInput"
+                        placeholder="Enter the phone number to append">
+                </div>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="PBAdressInput"
+                        placeholder="Enter the address to append">
+                </div>
+                <div class="d-grid">
+                    <button type="button" class="btn btn-primary" id="AppendButton">Append</button>
+                </div>
+                <button class="btn btn-light mt-2" type="button" style="width: 100%" data-bs-toggle="collapse" data-bs-target="#collapseTable" aria-expanded="false" aria-controls="collapseTable">
+                    See Phone Book
+                </button>
+                <div class="collapse" id="collapseTable">
+                    <table class="table mt-5" id="localStorageTable">
+                        <thead>
+                            <tr>
+                                <th>Phone Number</th>
+                                <th>Ethereum Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6 mt-4">
+                <div class="mb-3">
+                    <label for="addressInput" class="form-label bold fw-bold">Receiver Address:</label>
+                    <input type="text" class="form-control" id="addressInput"
+                        placeholder="Enter the receiver's address">
+                </div>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="amountInput" placeholder="Enter the amount">
+                </div>
+                <div class="d-grid">
+                    <button id="mintButton" class="btn btn-primary">Mint Token</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const mintButton = document.getElementById('mintButton');
+        const AppendButton = document.getElementById('AppendButton');
+        const addressInput = document.getElementById('addressInput');
+        const amountInput = document.getElementById('amountInput');
+        const web3 = new Web3(window.ethereum);
+        const tokenContractAddress = '0xe0aD04DF7B421A3Dd78Aa7Ae6D5Ed66638033c5d';
+        const abi = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "tokenName",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "tokenSymbol",
+                        "type": "string"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "_owner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "_spender",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "_value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Approval",
+                "type": "event"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_spender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "approve",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "success",
+                        "type": "bool"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_spender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_value",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "_extraData",
+                        "type": "bytes"
+                    }
+                ],
+                "name": "approveAndCall",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "success",
+                        "type": "bool"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "burn",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "success",
+                        "type": "bool"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Burn",
+                "type": "event"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "burnFrom",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "success",
+                        "type": "bool"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "target",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "freeze",
+                        "type": "bool"
+                    }
+                ],
+                "name": "freezeAccount",
+                "outputs": [],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "target",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "bool",
+                        "name": "frozen",
+                        "type": "bool"
+                    }
+                ],
+                "name": "FrozenFunds",
+                "type": "event"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "target",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "mintedAmount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "mintToken",
+                "outputs": [],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transfer",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "success",
+                        "type": "bool"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Transfer",
+                "type": "event"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFrom",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "success",
+                        "type": "bool"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "transferOwnership",
+                "outputs": [],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "allowance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "balanceOf",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [
+                    {
+                        "internalType": "uint8",
+                        "name": "",
+                        "type": "uint8"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "frozenAccount",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "name",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "totalSupply",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        const tokenContract = new web3.eth.Contract(abi, tokenContractAddress);
+
+        // phonebook localStorage.setItem('username', 'JohnDoe');
+        // localStorage.setItem('username');
+        // mint token by token number 
+        // mint token by dollar amount (min $10)
+
+        async function AppendToPB() {
+            var phoneValue = document.getElementById("PBPhoneInput").value;
+            var addressValue = document.getElementById("PBAdressInput").value;
+            //update to local storage
+            localStorage.setItem(phoneValue, addressValue);
+            loadLocalStorageTable();
+        }
+
+
+        async function mintToken() {
+            const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+            if (typeof window.ethereum === 'undefined') {
+                alert('Please install MetaMask to interact with this page.');
+                return;
+            }
+
+            let amount = amountInput.value;
+            let receiverAddress = addressInput.value;;
+            //check if it is a phone number, then convert to wallet address
+            if (receiverAddress.length <= 13) {
+                receiverAddress = localStorage.getItem(receiverAddress)
+            }
+
+            if (!web3.utils.isAddress(receiverAddress)) {
+                alert('Invalid receiver address. Please check the input.');
+                return;
+            }
+
+            //check if it is in USD($) Or token value
+
+            if (amount.startsWith("$")) {
+                amount = amount.substring(1);
+                const amountFloat = parseFloat(amount);
+                if (amountFloat < 10) { //check if greater than $10
+                    alert('Invalid Amount: less than $10.');
+                    return;
+
+                }
+                amount = amountFloat * 0.05;
+            }
+
+            const amountToMint = web3.utils.toWei(amount.toString(), 'ether'); // Mint X tokens
+            try {
+                console.log(receiverAddress, amountToMint)
+
+                await tokenContract.methods.mintToken(receiverAddress, amountToMint)
+                    .send({ from: accounts[0] });
+                alert('Token minted successfully!');
+            } catch (error) {
+                console.error(error);
+                alert('An error occurred while minting the token.');
+            }
+        }
+
+        function loadLocalStorageTable() {
+            const tableBody = document.querySelector("#localStorageTable tbody");
+            tableBody.innerHTML = ""
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+
+                const newRow = tableBody.insertRow();
+                const cell1 = newRow.insertCell(0);
+                const cell2 = newRow.insertCell(1);
+
+                cell1.textContent = key;
+                cell2.textContent = value;
+            }
+        }
+        loadLocalStorageTable();
+        mintButton.addEventListener('click', mintToken);
+        AppendButton.addEventListener('click', AppendToPB);
+    </script>
+</body>
+<style>
+    .logo-title {
+        color: #0c65ae;
+        font-family: 'Exo', sans-serif;
+        font-weight: 600;
+        font-weight: bold;
+        font-size: 2.5rem;
+    }
+</style>
+
+</html>
